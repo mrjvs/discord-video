@@ -163,8 +163,10 @@ class Voice {
     }
 
     sendVoice() {
-        this.udp.createUdp().then(() => {
-            this.udp.sendVideo();
+        this.udp.createUdp().then(async () => {
+            //await this.udp.sendVideo();
+            //await this.udp.sendCustomVideo();
+            await this.udp.sendCustomVideoTwo();
         });
     }
 
