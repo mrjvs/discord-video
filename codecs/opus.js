@@ -19,11 +19,12 @@ function createAudioPacket(voiceUdp, data) {
     packetHeader[0] = 0x80;
     packetHeader[1] = 0x78;
     packetHeader.writeUIntBE(voiceUdp.getNewSequence(), 2, 2);
-    packetHeader.writeUIntBE(this.time, 4, 4);
-    packetHeader.writeUIntBE(this.ssrc, 8, 4);
+    packetHeader.writeUIntBE(voiceUdp.time, 4, 4);
+    packetHeader.writeUIntBE(voiceUdp.ssrc, 8, 4);
 
+    incrementAudioValues(voiceUdp);
     const nonceBuffer = voiceUdp.getNewNonceBuffer();
-    return Buffer.concat([packetHeader, encryptData(data, nonceBuffer), nonceBuffer.slice(0, 4)]);
+    return Buffer.concat([packetHeader, encryptData(data, voiceUdp.secretkey, nonceBuffer), nonceBuffer.slice(0, 4)]);
 }
 
 module.exports = {

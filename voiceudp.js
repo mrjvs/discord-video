@@ -2,6 +2,7 @@ var fs = require('fs');
 const udpCon = require('dgram');
 const prism = require('prism-media');
 
+const { readIvfFile, getFrameFromIvf} = require("./ivfreader");
 const { partitionVideoData, getInitialVideoValues, createVideoPacket, incrementVideoFrameValues } = require("./codecs/vp8");
 const { createAudioPacket, incrementAudioValues } = require("./codecs/opus");
 
@@ -49,7 +50,7 @@ class VoiceUdp {
         this.secretkey = new Uint8Array(d.secret_key);
     }
 
-    sendAudioFile(filepath) {
+    async sendAudioFile(filepath) {
         // make ffmpeg stream
         const args = ['-i', filepath, ...FFMPEG_ARGUMENTS];
         const ffmpeg = new prism.FFmpeg({ args });
@@ -61,6 +62,7 @@ class VoiceUdp {
         // send stream data
         let c = 0;
         opus.on("data", async (chunk) => {
+            c++;
             setTimeout(() => {
                 const packet = createAudioPacket(this, chunk);
                 this.sendPacket(packet);
@@ -68,7 +70,10 @@ class VoiceUdp {
         });
     }
 
-    async sendVideoFrame(filepath) {
+    async sendVideo(filepath) {
+        const ivfFile = readIvfFile(filepath);
+        if (!ivfFile) return; // panic
+
         let options = {
             ssrc: this.ssrc + 1,
             secretkey: this.secretkey,
@@ -76,16 +81,19 @@ class VoiceUdp {
         };
         options = getInitialVideoValues(options);
 
-        const data = partitionVideoData(options.mtu, fs.readFileSync(filepath, { encoding: null }));
-
         console.log("--- start video generation ---");
-        while (true) {
+        for (let i = 0; i < ivfFile.frameCount; i++) {
+            const frame = getFrameFromIvf(ivfFile, i + 1);
+            if (!frame) return; // panic
+    
+            const data = partitionVideoData(options.mtu, frame.data);
+    
             console.log("Creating batch of frame packets");
             for (let i = 0; i < data.length; i++) {
                 const packet = createVideoPacket(this, options, data[i], i, data.length);
                 this.sendPacket(packet);
-                await sleep(1);
             }
+            await sleep(20);
             options =  incrementVideoFrameValues(options);
         }
     }

@@ -81,7 +81,7 @@ class Voice {
                 console.log(d);
                 this.handleReady(d);
                 this.sendProtocol();
-                this.sendtwelve();
+                this.sendtwelve(false);
                 this.setSpeaking(true);
             }
             else if (op === 6) { // heartbeat ack
@@ -122,13 +122,13 @@ class Voice {
         })); 
     }
 
-    sendtwelve() {
+    sendtwelve(bool) {
         this.ws.send(JSON.stringify({
             op: 12,
             d: {
                 audio_ssrc: this.ssrc,
-                video_ssrc: this.ssrc + 1,
-                rtx_ssrc: this.ssrc + 2,
+                video_ssrc: bool ? this.ssrc + 1 : 0,
+                rtx_ssrc: bool ? this.ssrc + 2 : 0
             },
         }));
     }
@@ -164,8 +164,11 @@ class Voice {
 
     sendVoice() {
         this.udp.createUdp().then(async () => {
-            // await this.udp.sendAudio("./framedata.packet");
-            await this.udp.sendVideoFrame("./recordedframe.packet");
+            this.udp.sendAudioFile("./tests/el.mp3");
+            
+            this.sendtwelve(true);
+            await this.udp.sendVideo("./tests/test.ivf");
+            this.sendtwelve(false);
         });
     }
 

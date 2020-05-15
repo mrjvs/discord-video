@@ -169,7 +169,7 @@ class Client {
                 guild_id,
                 channel_id,
                 self_mute: false,
-                self_deaf: true,
+                self_deaf: false,
                 self_video: true
             }
         }));
