@@ -6,7 +6,7 @@ const prism = require('prism-media');
 const ffmpegPath = require("ffmpeg-static");
 const { execFile } = require("child_process");
 
-const { incrementPacketValues, getInitialPacketValues, makeCustomPacket, incrementFramePacketValues } = require("./vp8");
+const { incrementPacketValues, partitionData, getInitialPacketValues, makeCustomPacket, incrementFramePacketValues } = require("./vp8");
 
 const max_nonce = 2 ** 32 - 1;
 const time_inc = (48000 / 100) * 2;
@@ -348,55 +348,26 @@ class VoiceUdp {
         }
     }
 
-    async sendCustomVideo() {
+    async sendFrame(filepath) {
         let options = {
             ssrc: this.ssrc + 1,
-            secretkey: this.secretkey
+            secretkey: this.secretkey,
+            mtu: 1200 // max seems to be around 1425 bytes for discord
         };
         options = getInitialPacketValues(options);
 
-        const data = [];
-        data[0] = fs.readFileSync("./testdata0.packet", {encoding: null})
-        data[1] = fs.readFileSync("./testdata1.packet", {encoding: null})
-        data[2] = fs.readFileSync("./testdata2.packet", {encoding: null})
-
-        console.log("--- start video generation ---");
-        while (true) {
-            console.log("Creating batch of frame packets");
-            for (let i = 0; i < 3; i++) {
-                const packet = makeCustomPacket(options, data[i], i, 3);
-                fs.writeFileSync("./pack" + (i+1) + ".binbak", packet);
-                options = incrementPacketValues(options);
-                this.sendVideoPacket(packet);
-                await this.sleep(1);
-            }
-            options =  incrementFramePacketValues(options);
-            //return;
-        }
-    }
-
-    async sendCustomVideoTwo() {
-        let options = {
-            ssrc: this.ssrc + 1,
-            secretkey: this.secretkey
-        };
-        options = getInitialPacketValues(options);
-
-        const data = [];
-        data[0] = Buffer.from(fs.readFileSync("./framedata.packet", {encoding: "utf8"}).split(" ").join(""), "hex");
+        const data = partitionData(options.mtu, fs.readFileSync(filepath, { encoding: null }));
 
         console.log("--- start video generation ---");
         while (true) {
             console.log("Creating batch of frame packets");
             for (let i = 0; i < data.length; i++) {
                 const packet = makeCustomPacket(options, data[i], i, data.length);
-                //fs.writeFileSync("./pack" + (i+1) + ".binbak", packet);
                 options = incrementPacketValues(options);
                 this.sendVideoPacket(packet);
-                await this.sleep(1);
+                await this.sleep(5);
             }
             options =  incrementFramePacketValues(options);
-            //return;
         }
     }
 
