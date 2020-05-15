@@ -164,8 +164,8 @@ class Voice {
 
     sendVoice() {
         this.udp.createUdp().then(async () => {
-            // await this.udp.sendFrame("./framedata.packet");
-            await this.udp.sendFrame("./recordedframe.packet");
+            // await this.udp.sendAudio("./framedata.packet");
+            await this.udp.sendVideoFrame("./recordedframe.packet");
         });
     }
 
@@ -182,3 +182,7 @@ class Voice {
 module.exports = {
     Voice
 };
+
+// TODO identify to get user id.
+// TODO ip discovery
+// TODO ivf reader tool

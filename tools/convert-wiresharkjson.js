@@ -1,6 +1,6 @@
 const fs = require("fs");
 const sodium = require("libsodium-wrappers");
-const { decrypt } = require("./convert");
+const { decrypt } = require("./rtphelper");
 
 async function run() {
     await sodium.ready;
@@ -9,7 +9,7 @@ async function run() {
     const secretkey = new Uint8Array(keys);
     const ssrc = [453268, 453269, 453270]
     let i = 0;
-    const packets = require("./lagapacket-stripped.json");
+    const packets = require("../packets/lagapacket-stripped.json");
 
     let output = {
         comment: "laga packet data",

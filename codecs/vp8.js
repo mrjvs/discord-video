@@ -84,15 +84,9 @@ function encryptData(data, secretkey, nonce) {
     return sodium.crypto_secretbox_easy(data, nonce, secretkey);
 }
 
-function makeNonceBuffer(nonceNum) {
-    const nonceBuffer = Buffer.alloc(24)
-    nonceBuffer.writeUInt32BE(nonceNum, 0);
-    return nonceBuffer;
-}
-
-function makeCustomPacket({sequence, nonceNum, timestamp, ssrc, secretkey, pictureId}, rawdata, count, len) {
+function createVideoPacket(voiceUdp, {timestamp, ssrc, secretkey, pictureId}, rawdata, count, len) {
     const packetHeader = makeRtpHeader({
-        sequence,
+        sequence: voiceUdp.getNewSequence(),
         timestamp,
         ssrc
     }, count, len);
@@ -102,33 +96,25 @@ function makeCustomPacket({sequence, nonceNum, timestamp, ssrc, secretkey, pictu
     }, rawdata, count, len);
 
     // nonce buffer used for encryption. 4 bytes are appended to end of packet
-    const nonceBuffer = makeNonceBuffer(nonceNum);
+    const nonceBuffer = voiceUdp.getNewNonceBuffer();
     return Buffer.concat([packetHeader, encryptData(packetData, secretkey, nonceBuffer), nonceBuffer.slice(0, 4)]);
 }
 
 // TODO, all numbers still need overflow handled correctly
-function incrementPacketValues(obj) {
-    obj.sequence++;
-    obj.nonceNum++; // nonce number increments every packet
-    return obj;
-}
-
-function incrementFramePacketValues(obj) {
+function incrementVideoFrameValues(obj) {
     obj.timestamp += 8730; // random number gotten from packets. needs to be generated (90khz)
     obj.pictureId++; // pictureId increments every frame
     return obj;
 }
 
-function getInitialPacketValues(obj) {
-    obj.sequence = 0;
+function getInitialVideoValues(obj) {
     obj.timestamp = 0;
-    obj.nonceNum = 0;
     obj.pictureId = 0;
     return obj;
 }
 
 // partitions the data into max size packets
-function partitionData(mtu, data) {
+function partitionVideoData(mtu, data) {
     let i = 0;
     let len = data.length;
 
@@ -145,9 +131,8 @@ function partitionData(mtu, data) {
 }
 
 module.exports = {
-    makeCustomPacket,
-    incrementPacketValues,
-    getInitialPacketValues,
-    incrementFramePacketValues,
-    partitionData
+    createVideoPacket,
+    getInitialVideoValues,
+    incrementVideoFrameValues,
+    partitionVideoData
 };
