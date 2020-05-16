@@ -11,13 +11,11 @@ function readIvfFile(filepath) {
         codec: file.slice(8, 12).toString(),
         width: file.readUIntLE(12, 2),
         height: file.readUIntLE(14, 2),
-        timeDenominator: file.readBigInt64LE(16),
+        timeDenominator: file.readUIntLE(16, 4),
         timeNumerator: file.readUIntLE(20, 4),
         frameCount: file.readUIntLE(24, 4),
         frames: file.slice(32)
     };
-
-    console.log(out.timeDenominator, out.frameCount, out.timeNumerator);
 
     if (out.signature != "DKIF") {
         console.error("IVf: invalid signature");
@@ -38,13 +36,13 @@ function getFrameFromIvf(file, framenum = 1) {
         return false;
     
     let currentFrame = 1;
-    let currentOffset = 0;
+    let currentBuffer = file.frames;
     while (true) {
-        const size = file.frames.readUIntLE(currentOffset, 4);
-        
+        const size = currentBuffer.readUIntLE(0, 4);
+
         // jump to next frame if isnt the requested frame
         if (currentFrame != framenum) {
-            currentOffset += 12 + size;
+            currentBuffer = currentBuffer.slice(12 + size, currentBuffer.length);
             currentFrame++;
             continue
         }
@@ -52,19 +50,20 @@ function getFrameFromIvf(file, framenum = 1) {
         // return frame data
         const out = {
             size: size,
-            timestamp: file.frames.readBigUInt64LE(currentOffset + 4),
-            data: file.frames.slice(currentOffset + 12, currentOffset + 12 + size)
+            timestamp: currentBuffer.readBigUInt64LE(4),
+            data: currentBuffer.slice(12, 12 + size)
         }
-        console.log(out);
+        //console.log(out);
         return out;
     }
 }
 
-module.exports = {
-    getFrameFromIvf,
-    readIvfFile
+function getFrameDelayInMilliseconds(file) {
+    return ((parseFloat(file.timeNumerator) / parseFloat(file.timeDenominator)) * 1000);
 }
 
-// 4299262293296 time denominator
-// 1001 time numator
-// incremental timestamp
+module.exports = {
+    getFrameFromIvf,
+    readIvfFile,
+    getFrameDelayInMilliseconds
+}

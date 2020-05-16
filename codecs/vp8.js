@@ -101,8 +101,8 @@ function createVideoPacket(voiceUdp, {timestamp, ssrc, secretkey, pictureId}, ra
 }
 
 // TODO, all numbers still need overflow handled correctly
-function incrementVideoFrameValues(obj) {
-    obj.timestamp += 1; // 8730 // random number gotten from packets. needs to be generated (90khz)
+function incrementVideoFrameValues(obj, file) {
+    obj.timestamp += 1; // random number gotten from packets. needs to be generated (90khz)
     obj.pictureId++; // pictureId increments every frame
     return obj;
 }

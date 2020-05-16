@@ -21,7 +21,7 @@ function createAudioPacket(voiceUdp, data) {
     packetHeader.writeUIntBE(voiceUdp.getNewSequence(), 2, 2);
     packetHeader.writeUIntBE(voiceUdp.time, 4, 4);
     packetHeader.writeUIntBE(voiceUdp.ssrc, 8, 4);
-
+    
     incrementAudioValues(voiceUdp);
     const nonceBuffer = voiceUdp.getNewNonceBuffer();
     return Buffer.concat([packetHeader, encryptData(data, voiceUdp.secretkey, nonceBuffer), nonceBuffer.slice(0, 4)]);
