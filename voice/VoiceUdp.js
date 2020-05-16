@@ -83,7 +83,7 @@ class VoiceUdp {
     }
 
     handleIncoming(buf) {
-        console.log("RECEIVED PACKET", buf);
+        //console.log("RECEIVED PACKET", buf);
     }
 
     createUdp() {
