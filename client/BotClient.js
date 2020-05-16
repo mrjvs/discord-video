@@ -119,6 +119,10 @@ class BotClient {
         }, interval);
     }
 
+    getVoiceConnection(guild_id) {
+        this.voiceGuild[guild_id];
+    }
+
     /*
     ** set status of bot
     ** text -> Text of game the bot is playing

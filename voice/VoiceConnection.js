@@ -1,11 +1,6 @@
 const WebSocket = require('ws');
-const fs = require("fs");
 
 const { VoiceUdp } = require("./VoiceUdp");
-
-const {
-    ip
-} = require("../constants");
 
 const voiceOpCodes = {
     identify: 0,
@@ -28,7 +23,7 @@ class VoiceConnection {
         }
 
         // make udp client
-        this.udp = new VoiceUdp();
+        this.udp = new VoiceUdp(this);
 
         this.guild = guildId;
         this.botId = botId;
@@ -95,6 +90,7 @@ class VoiceConnection {
 
         // transfer encryption key to udp client
         this.udp.setSession(d);
+        this.ready(this.udp);
     }
 
     setupEvents() {
@@ -102,7 +98,7 @@ class VoiceConnection {
             const { op, d } = JSON.parse(data);
             if (op == 2) { // ready
                 this.handleReady(d);
-                this.setProtocols();
+                this.sendVoice();
                 this.setVideoStatus(false);
             }
             else if (op >= 4000) {
@@ -114,7 +110,6 @@ class VoiceConnection {
             }
             else if (op === 4) { // session description
                 this.handleSession(d);
-                this.sendVoice();
             }
             else if (op === 5) {
                 // ignore speaking updates
@@ -207,8 +202,6 @@ class VoiceConnection {
     sendVoice() {
         return new Promise((resolve, reject) => {
             this.udp.createUdp().then(async () => {
-                this.setProtocols();
-                this.ready(this.udp);
                 resolve();
             });
         })

@@ -13,17 +13,20 @@ function playVoice(voice) {
     voice.playAudioFile("./tests/vio.mp3");
 }
 
-function playVideo(voice) {
-    voice.playVideoFile("./tests/test.ivf");
+async function playVideo(voice) {
+    await voice.playVideoFile("./tests/test.ivf", "./tests/el.mp3");
 }
 
+// guild create event
 client.events.on("guild", (guild) => {
     if (testGuild !== guild.id)
         return
+    client.joinVoice(guild.id, testVoice, playVideo);
 });
 
+// ready event
 client.events.on("ready", () => {
-    console.log("--- bot is ready ---");
+    console.log(`--- bot is ready ---`);
     client.sendMessage("Booting done", logChannel);
 });
 

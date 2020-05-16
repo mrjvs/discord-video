@@ -1,0 +1,5 @@
+packet structure:
+  12 byte rtp header
+  decrypted data:
+    rtp header extension
+    vp8 data

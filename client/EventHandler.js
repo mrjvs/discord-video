@@ -1,9 +1,3 @@
-const {
-    logChannel,
-    testVoice,
-    testGuild
-} = require("../constants");
-
 function handleGatewayEvent(client, event, data) {
     if (event === 'READY') {
         client.events.emit("ready", {});

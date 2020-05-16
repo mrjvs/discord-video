@@ -7,12 +7,28 @@ const { streamAudioFile } = require("../media/audioHandler");
 
 const max_nonce = 2 ** 32 - 1;
 
+// credit to discord.js
+function parseLocalPacket(message) {
+    try {
+      const packet = Buffer.from(message);
+      let address = '';
+      for (let i = 4; i < packet.indexOf(0, i); i++) address += String.fromCharCode(packet[i]);
+      const port = parseInt(packet.readUIntLE(packet.length - 2, 2).toString(10), 10);
+      return { address, port };
+    } catch (error) {
+      return { error };
+    }
+  }
+  
+
 class VoiceUdp {
-    constructor() {
+    constructor(voiceConnection) {
         this.nonce = 0;
         this.noncetwo = 0;
         this.time = 0;
         this.sequence = 0;
+
+        this.voiceConnection = voiceConnection;
     }
 
     getNewNonceBuffer() {
@@ -44,8 +60,14 @@ class VoiceUdp {
         return await streamAudioFile(this, filepath);
     }
 
-    async playVideoFile(filepath) {
-        return await streamVideoFile(this, filepath);
+    async playVideoFile(filepath, audioPath) {
+        this.voiceConnection.setVideoStatus(true);
+        if (audioPath) {
+            streamAudioFile(this, audioPath);
+        }
+        const res = await streamVideoFile(this, filepath);
+        this.voiceConnection.setVideoStatus(false);
+        return res;
     }
 
     sendPacket(packet) {
@@ -61,7 +83,7 @@ class VoiceUdp {
     }
 
     handleIncoming(buf) {
-        //console.log("RECEIVED PACKET");
+        console.log("RECEIVED PACKET", buf);
     }
 
     createUdp() {
@@ -69,9 +91,31 @@ class VoiceUdp {
             this.udp = udpCon.createSocket('udp4');
             this.udp.on('error', e => {
                 console.error("Error connecting to media udp server", e);
+                reject(e);
             });
-            this.udp.once('message', this.handleIncoming);
-            resolve(true);
+            this.udp.once('message', (message) => {
+                
+                const packet = parseLocalPacket(message);
+                if (packet.error) {
+                    return reject(packet.error);
+                }
+
+                this.voiceConnection.self_ip = packet.address;
+                this.voiceConnection.self_port = packet.port;
+                this.voiceConnection.setProtocols();
+
+                resolve(true);
+                this.udp.on('message', this.handleIncoming);
+            });
+
+            const blank = Buffer.alloc(70);
+            blank.writeUIntBE(this.ssrc, 0, 4);
+
+            this.udp.send(blank, 0, blank.length, this.port, this.address, (error, bytes) => {
+                if (error) {
+                    return reject(error)
+                }
+            });
         });
     }
 }
