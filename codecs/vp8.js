@@ -27,7 +27,8 @@ seems to increment constantly on every packet
 ---
 id 4, length 0 (0x40)
 rotates frame
-REQUIRED for last packet of the frame
+Needs to be in last packet of frame
+discord usually sends it in the first frame of the stream
 00 -> default, no rotation
 01 -> rotate 90 deg clockwise
 02 -> rotates 180 deg
@@ -80,7 +81,7 @@ function makevp8Frame({pictureId}, frameData, index, len) {
     const str = [headerExtensionString, headerExtensionStringLastFrame];
     let i;
     if (index + 1 == len)
-        i = 1;
+        i = 0;
     else
         i = 0;
     const headerExtensionBuf = Buffer.from(str[i], "hex");
