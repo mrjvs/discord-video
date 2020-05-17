@@ -1,8 +1,9 @@
 # discord-video
-attempt at video on discord
+Video for discord bots
 
 ## current status
-video working but rejecting half of the frames.
+video working. can only run ivf files
+**Warning:** still a spaghettifest
 
 ## contributing
 Mess around in `codecs/vp8.js` to change the way packets are generated
