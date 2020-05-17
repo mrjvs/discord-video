@@ -27,8 +27,12 @@ const packetCount = 1578;
 const width = 960;
 const height = 360;
 const outputPath = './recorded.ivf';
+const outputPathStats = './recorded-stats.json';
 
 const output = fs.createWriteStream(outputPath);
+const outputStats = {
+    ext: {}
+};
 
 // ivf file header
 const fileHeader = Buffer.alloc(32);
@@ -69,8 +73,23 @@ for (let i = 0; i < packetCount; i++) {
         // loop over extensions
         while (len > 0) {
             // get extension byte length
+            const id = ((packet[offset] & 0b11110000) >> 4).toString();
             packet[offset] &= 0b00001111;
             let extlen = packet.readUInt8(offset) + 1;
+
+            // stats
+            if (!outputStats.ext[id]) {
+                outputStats.ext[id] = {
+                    data: [],
+                    values: []
+                }
+            }
+            const value = packet.slice(offset + 1, offset + 1 + extlen).toString("hex");
+            outputStats.ext[id].data.push({
+                len: extlen - 1,
+                value,
+            });
+            outputStats.ext[id].values.push(value);
 
             // set offset to next extension
             offset += extlen + 1;
@@ -114,6 +133,11 @@ output.on("finish", () => {
     outputFile.writeBigInt64LE(BigInt(framecount), 24);
     fs.writeFileSync(outputPath, outputFile);
 
+    // stats
+    outputStats.frames = framecount;
+    fs.writeFileSync(outputPathStats, JSON.stringify(outputStats, null, 2));
+
+    // logging
     console.log(`Wrote ${framecount} frames to file.`);
 });
 
