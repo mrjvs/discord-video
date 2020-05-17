@@ -26,6 +26,8 @@ async function streamIvfFile(voiceUdp, filepath) {
     };
     options = getInitialVideoValues(options);
 
+    let counter = 0;
+
     for (let i = 0; i < ivfFile.frameCount; i++) {
         const frame = getFrameFromIvf(ivfFile, i + 1);
         if (!frame) return;
@@ -33,12 +35,14 @@ async function streamIvfFile(voiceUdp, filepath) {
         const data = partitionVideoData(options.mtu, frame.data);
 
         for (let i = 0; i < data.length; i++) {
+            counter++;
             const packet = createVideoPacket(voiceUdp, options, data[i], i, data.length);
             voiceUdp.sendPacket(packet);
         }
         await sleep(getFrameDelayInMilliseconds(ivfFile));
         options = incrementVideoFrameValues(options);
     }
+    console.log(`Sent ${counter} packets for video!`);
     return true;
 }
 
