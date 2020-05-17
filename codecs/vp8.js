@@ -26,6 +26,7 @@ id 4, length 0 (0x40)
 rotates frame
 Needs to be in last packet of frame
 discord usually sends it in the first frame of the stream
+(if set on every frame it breaks transmission)
 00 -> default, no rotation
 01 -> rotate 90 deg clockwise
 02 -> rotates 180 deg
@@ -43,33 +44,6 @@ unknown purpose
 speculation:
 big endian value.
 increments by seemingly random values every packet
-*/
-
-/*
-notes:
-
-diff headerext id 3
-5163450
-            - 25690
-5189140                --
-            - 1311      |
-(5190451)               |- 26477
-            - 25166     |
-5215617                --
-
-
-increment rtp header timestamp
-3382405674 - 3382396944 = 8730
-
-3382415034 - 3382405674 = 9360
-
-3382423584 - 3382415034 = 8550
-
-
-next things to try:
- 1. strip packets from header extensions. compile it in a batch of frames. then send it over existing code to see if it frame drops.
-    1.1 try it with header extensions saved seperately
- 2. try with different resolutions. (possibly use webrtc SDP for size specification?)
 */
 
 function createRtpHeaderExtensions(exts) {
