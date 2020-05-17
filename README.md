@@ -12,3 +12,8 @@ configuration:
 ```JS
 module.exports = "BOT TOKEN HERE"
 ```
+
+### make video to play
+```SH
+./ffmpeg.exe -i "INPUT" -f ivf OUTPUT.ivf
+```

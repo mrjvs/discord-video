@@ -104,20 +104,14 @@ function createRtpHeaderExtensions(exts) {
         extArr.push(out);
     }
 
-    extArr.push(Buffer.alloc(1));
+    if (exts.length == 1) {
+        extArr.push(Buffer.alloc(1));
+    }
     return Buffer.concat(extArr);
 }
 
-
 function makevp8Frame({pictureId}, frameData, index, len) {
-
-    // header extensions
-    let extensions = [
-        { id: 5, len: 2, type: "uintBE", val: 0 }
-    ];
-    if (index + 1 == len)
-        extensions.push({ id: 4, len: 1, type: "uintBE", val: 0});
-    const headerExtensionBuf = createRtpHeaderExtensions(extensions);
+    const headerExtensionBuf = createRtpHeaderExtensions({ id: 5, len: 2, type: "uintBE", val: 0 });
 
     // vp8 payload descriptor
     const payloadDescriptorBuf = Buffer.alloc(2);
@@ -131,7 +125,7 @@ function makevp8Frame({pictureId}, frameData, index, len) {
     // vp8 pictureid payload extension
     const pictureIdBuf = Buffer.alloc(2);
 
-    pictureIdBuf.writeUIntLE(pictureId, 0, 2);
+    pictureIdBuf.writeUIntBE(pictureId, 0, 2);
     pictureIdBuf[0] |= 0b10000000;
 
     return Buffer.concat([headerExtensionBuf, payloadDescriptorBuf, pictureIdBuf, frameData]);
@@ -176,7 +170,7 @@ function createVideoPacket(voiceUdp, {timestamp, ssrc, secretkey, pictureId}, ra
 
 // TODO, all numbers still need overflow handled correctly
 function incrementVideoFrameValues(obj, file) {
-    obj.timestamp += 1; // random number gotten from packets. needs to be generated (90khz)
+    obj.timestamp += 90000; // random number gotten from packets. needs to be generated (90khz)
     obj.pictureId++; // pictureId increments every frame
     return obj;
 }
