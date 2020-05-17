@@ -111,7 +111,7 @@ function createRtpHeaderExtensions(exts) {
 }
 
 function makevp8Frame({pictureId}, frameData, index, len) {
-    const headerExtensionBuf = createRtpHeaderExtensions({ id: 5, len: 2, type: "uintBE", val: 0 });
+    const headerExtensionBuf = createRtpHeaderExtensions([{ id: 5, len: 2, type: "uintBE", val: 0 }]);
 
     // vp8 payload descriptor
     const payloadDescriptorBuf = Buffer.alloc(2);
