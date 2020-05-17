@@ -14,7 +14,7 @@ function playVoice(voice) {
 }
 
 async function playVideo(voice) {
-    await voice.playVideoFile("./packets/recorded.ivf");
+    await voice.playVideoFile("./tests/test.ivf");
 }
 
 // guild create event

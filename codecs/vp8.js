@@ -75,16 +75,50 @@ next things to try:
  2. try with different resolutions. (possibly use webrtc SDP for size specification?)
 */
 
+function createRtpHeaderExtensions(exts) {
+    const profile = Buffer.alloc(4);
+
+    profile[0] = 0xBE;
+    profile[1] = 0xDE;
+    profile.writeInt16BE(exts.length, 2);
+
+    const extArr = [profile];
+    for (let ext of exts) {
+        if (ext.val instanceof Buffer) {
+            ext.len = ext.val.length;
+        }
+        let byte = Buffer.alloc(1);
+        byte[0] = (ext.id & 0b00001111) << 4;
+        byte[0] |= ((ext.len - 1) & 0b00001111);
+
+        let out;
+        if (ext.val instanceof Buffer) {
+            out = ext.val;
+        } else if (ext.type == "uintBE") {
+            out = Buffer.alloc(ext.len);
+            out.writeUIntBE(ext.val, 0, ext.len);
+        } else if (ext.type == "uintLE") {
+            out = Buffer.alloc(ext.len);
+            out.writeUIntLE(ext.val, 0, ext.len);
+        } else {
+            throw "oof";
+        }
+        extArr.push(Buffer.concat([byte, out]));
+    }
+
+    return Buffer.concat(extArr);
+}
+
+
 function makevp8Frame({pictureId}, frameData, index, len) {
 
-    // header extension
-    const str = [headerExtensionString, headerExtensionStringLastFrame];
-    let i;
+    // header extensions
+    let extensions = [
+        { id: 5, len: 2, type: "uintBE", val: 0 }
+    ];
     if (index + 1 == len)
-        i = 0;
-    else
-        i = 0;
-    const headerExtensionBuf = Buffer.from(str[i], "hex");
+        extensions.push({ id: 4, len: 1, type: "uintBE", val: 0});
+    const headerExtensionBuf = createRtpHeaderExtensions(extensions);
 
     // vp8 payload descriptor
     const payloadDescriptorBuf = Buffer.alloc(2);

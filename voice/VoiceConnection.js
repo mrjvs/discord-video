@@ -211,7 +211,3 @@ class VoiceConnection {
 module.exports = {
     VoiceConnection
 };
-
-// TODO identify to get user id.
-// TODO ip discovery
-// TODO ivf reader tool
