@@ -1,8 +1,5 @@
 const sodium = require("libsodium-wrappers");
 
-const headerExtensionString = "BEDE000151000000"
-const headerExtensionStringLastFrame = "BEDE00025100004000"
-
 /*
 header extension:
 0: 0xBE - 1 byte
@@ -103,9 +100,11 @@ function createRtpHeaderExtensions(exts) {
         } else {
             throw "oof";
         }
-        extArr.push(Buffer.concat([byte, out]));
+        extArr.push(byte);
+        extArr.push(out);
     }
 
+    extArr.push(Buffer.alloc(1));
     return Buffer.concat(extArr);
 }
 
