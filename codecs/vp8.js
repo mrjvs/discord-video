@@ -23,6 +23,7 @@ unknown purpose
 REQUIRED every packet
 can be set to any number and has no visible effect
 seems to increment constantly on every packet
+(with some exceptions. possibly lag/packet loss)
 ---
 id 4, length 0 (0x40)
 rotates frame
@@ -32,6 +33,45 @@ REQUIRED for last packet of the frame
 02 -> rotates 180 deg
 03 -> rotates 90 deg counter clockwise
 ---
+id 3, length 2 (0x32)
+unknown purpose
+
+example value: 4d3646
+Seems to increment in ~25000 steps every frame
+---
+id 2, length 2 (0x22)
+unknown purpose
+
+speculation:
+big endian value.
+increments by seemingly random values every packet
+*/
+
+/*
+notes:
+
+diff headerext id 3
+5163450
+            - 25690
+5189140                --
+            - 1311      |
+(5190451)               |- 26477
+            - 25166     |
+5215617                --
+
+
+increment rtp header timestamp
+3382405674 - 3382396944 = 8730
+
+3382415034 - 3382405674 = 9360
+
+3382423584 - 3382415034 = 8550
+
+
+next things to try:
+ 1. strip packets from header extensions. compile it in a batch of frames. then send it over existing code to see if it frame drops.
+    1.1 try it with header extensions saved seperately
+ 2. try with different resolutions. (possibly use webrtc SDP for size specification?)
 */
 
 function makevp8Frame({pictureId}, frameData, index, len) {
