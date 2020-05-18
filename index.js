@@ -3,8 +3,8 @@ const token = require("./config.js");
 
 const client = new Client();
 
-const testGuild = "488394590458478602";
-const testVoice = "488431920712253440";
+const testGuild = "688771220706951189";
+const testVoice = "688808948325023952";
 const logChannel = "709087953145561188";
 
 const prefix = "$";
@@ -14,7 +14,7 @@ function playVoice(voice) {
 }
 
 async function playVideo(voice) {
-    await voice.playVideoFile("./tests/pudding.ivf", "./tests/pudding.mp3");
+    await voice.playVideoFile("./tests/el.ivf", "./tests/el.mp3");
 }
 
 // guild create event

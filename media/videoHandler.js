@@ -1,5 +1,5 @@
 const { readIvfFile, getFrameFromIvf, getFrameDelayInMilliseconds} = require("./ivfreader");
-const { partitionVideoData, getInitialVideoValues, createVideoPacket, incrementVideoFrameValues } = require("../codecs/vp8");
+const { VideoStream } = require("./videoStream");
 
 async function streamVideoFile(voiceUdp, filepath) {
     if (filepath.endsWith(".ivf"))
@@ -19,12 +19,8 @@ async function streamIvfFile(voiceUdp, filepath) {
     const ivfFile = readIvfFile(filepath);
     if (!ivfFile) return false;
 
-    let options = {
-        ssrc: voiceUdp.ssrc + 1,
-        secretkey: voiceUdp.secretkey,
-        mtu: 1200 // max seems to be around 1425 bytes for discord
-    };
-    options = getInitialVideoValues(options);
+    const videoStream = new VideoStream({ udp: voiceUdp });
+    videoStream.setSleepTime(getFrameDelayInMilliseconds(ivfFile));
 
     let counter = 0;
 
@@ -32,15 +28,14 @@ async function streamIvfFile(voiceUdp, filepath) {
         const frame = getFrameFromIvf(ivfFile, i + 1);
         if (!frame) return;
 
-        const data = partitionVideoData(options.mtu, frame.data);
-
-        for (let i = 0; i < data.length; i++) {
-            counter++;
-            const packet = createVideoPacket(voiceUdp, options, data[i], i, data.length);
-            voiceUdp.sendPacket(packet);
-        }
-        await sleep(getFrameDelayInMilliseconds(ivfFile));
-        options = incrementVideoFrameValues(options);
+        await new Promise((resolve, reject) => {
+            videoStream.write(frame.data, (err) => {
+                if (err)
+                    reject(err);
+                resolve(true);
+            });
+        })
+        counter++;
     }
     console.log(`Sent ${counter} packets for video!`);
     return true;
