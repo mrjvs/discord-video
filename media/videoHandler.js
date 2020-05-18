@@ -1,23 +1,55 @@
-const { readIvfFile, getFrameFromIvf, getFrameDelayInMilliseconds} = require("./ivfreader");
+const prism = require("prism-media");
+const { readIvfFile, getFrameFromIvf, getFrameDelayInMilliseconds, IvfTransformer } = require("./ivfreader");
 const { VideoStream } = require("./videoStream");
 
-async function streamVideoFile(voiceUdp, filepath) {
+const FFMPEG_ARGUMENTS = "-re -f mp4 -i - -loglevel 0 -f ivf".split(" ");
+
+async function streamVideoFile(voiceUdp, filepath, startcb) {
     if (filepath.endsWith(".ivf"))
-        return await streamIvfFile(voiceUdp, filepath);
+        return await streamIvfFile(voiceUdp, filepath, startcb);
     return false;
 }
 
-function sleep(i) {
-    return new Promise((resolve) => {
-        setTimeout(() => {
+function streamVideoFileStream(voiceUdp, stream, type) {
+    return new Promise((resolve, reject) => {
+
+        // pipe into ffmpeg if not an ivf stream
+        let inputStream;
+        if (type == "ivf") {
+            inputStream = stream;
+        }
+        else if (type == "mp4") {
+            const args = FFMPEG_ARGUMENTS;
+            inputStream = new prism.FFmpeg({ args });
+            stream.pipe(inputStream);
+        }
+        else {
+            reject();
+        }
+
+        // make stream
+        const ivfStream = new IvfTransformer();
+        const videoStream = new VideoStream({ udp: voiceUdp });
+    
+        // get header frame time
+        ivfStream.on("header", (header) => {
+            videoStream.setSleepTime(getFrameDelayInMilliseconds(header));
+        });
+
+        videoStream.on("finish", () => {
             resolve();
-        }, i);
+        });
+
+        inputStream.pipe(ivfStream);
+        ivfStream.pipe(videoStream);
     });
 }
 
-async function streamIvfFile(voiceUdp, filepath) {
-    const ivfFile = readIvfFile(filepath);
+async function streamIvfFile(voiceUdp, filepath, startcb) {
+    const ivfFile = await readIvfFile(filepath);
     if (!ivfFile) return false;
+
+    startcb();
 
     const videoStream = new VideoStream({ udp: voiceUdp });
     videoStream.setSleepTime(getFrameDelayInMilliseconds(ivfFile));
@@ -42,5 +74,6 @@ async function streamIvfFile(voiceUdp, filepath) {
 }
 
 module.exports = {
-    streamVideoFile
+    streamVideoFile,
+    streamVideoFileStream
 };

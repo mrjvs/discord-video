@@ -1,11 +1,15 @@
 const { Client } = require("./discord");
+const fs = require("fs");
 const token = require("./config.js");
 
 const client = new Client();
 
-const testGuild = "688771220706951189";
-const testVoice = "688808948325023952";
+const testGuild = "488394590458478602";
+const testVoice = "488431920712253440";
 const logChannel = "709087953145561188";
+
+
+const video = "./tests/koe.mp4";
 
 const prefix = "$";
 
@@ -14,7 +18,10 @@ function playVoice(voice) {
 }
 
 async function playVideo(voice) {
-    await voice.playVideoFile("./tests/el.ivf", "./tests/el.mp3");
+    const fileStream = fs.createReadStream(video);
+    const audioStream = fs.createReadStream(video);
+    voice.playAudioFileStream(audioStream, "mp4");
+    await voice.playVideoFileStream(fileStream, "mp4");
 }
 
 // guild create event

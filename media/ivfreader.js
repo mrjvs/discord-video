@@ -1,31 +1,129 @@
 const fs = require("fs");
+const { Transform } = require("stream");
 
-function readIvfFile(filepath) {
-    const file = fs.readFileSync(filepath, { encoding: null });
+/*
+** Transform stream to transform file stream into ivf file
+** TODO: optimize concats
+*/
+class IvfTransformer extends Transform {
+    constructor(options) {
+        super(options);
+        this.headerSize = 32;
+        this.frameHeaderSize = 12;
 
-    const out = {
-        fullfile: file,
-        signature: file.slice(0, 4).toString(),
-        version: file.readUIntLE(4, 2),
-        headerLength: file.readUIntLE(6, 2),
-        codec: file.slice(8, 12).toString(),
-        width: file.readUIntLE(12, 2),
-        height: file.readUIntLE(14, 2),
-        timeDenominator: file.readUIntLE(16, 4),
-        timeNumerator: file.readUIntLE(20, 4),
-        frameCount: file.readUIntLE(24, 4),
-        frames: file.slice(32)
+        this.header = null;
+        this.buf = null;
+        this.retFullFrame = (options && options.fullframe) ? options.fullframe : false;
+    }
+
+    _parseHeader(header) {
+        const out = {
+            signature: header.slice(0, 4).toString(),
+            version: header.readUIntLE(4, 2),
+            headerLength: header.readUIntLE(6, 2),
+            codec: header.slice(8, 12).toString(),
+            width: header.readUIntLE(12, 2),
+            height: header.readUIntLE(14, 2),
+            timeDenominator: header.readUIntLE(16, 4),
+            timeNumerator: header.readUIntLE(20, 4),
+            frameCount: header.readUIntLE(24, 4)
+        };
+
+        this.header = out;
+        this.emit("header", this.header);
+    }
+
+    _getFrameSize(buf) {
+        return buf.readUIntLE(0, 4);
+    }
+
+    _parseFrame(frame) {
+        const size = this._getFrameSize(frame);
+
+        if (this.retFullFrame)
+            return this.push(frame.slice(0, 12 + size));
+
+        const out = {
+            size: size,
+            timestamp: frame.readBigUInt64LE(4),
+            data: frame.slice(12, 12 + size)
+        }
+        this.push(out.data);
+    }
+
+    _appendChunkToBuf(chunk) {
+        if (this.buf)
+            this.buf = Buffer.concat([this.buf, chunk]);
+        else
+            this.buf = chunk;
+    }
+
+    _updateBufLen(size) {
+        if (this.buf.length > size)
+            this.buf = this.buf.slice(size, this.buf.length);
+        else
+            this.buf = null;
+    }
+
+    _write(chunk, encoding, cb) {
+        this._appendChunkToBuf(chunk);
+        
+        // parse header
+        if (!this.header) {
+            if (this.buf.length >= this.headerSize) {
+                this._parseHeader(this.buf.slice(0, this.headerSize));
+                this._updateBufLen(this.headerSize);
+            }
+            else {
+                cb();
+                return;
+            }
+        }
+        
+        // parse frame(s)
+        while (this.buf && this.buf.length >= this.frameHeaderSize) {
+            const size = this._getFrameSize(this.buf) + this.frameHeaderSize;
+
+            if (this.buf.length >= size) {
+                this._parseFrame(this.buf.slice(0, size));
+                this._updateBufLen(size);
+            }
+            else
+                break
+        }
+        
+        // callback
+        cb();
+    }
+}
+
+async function readIvfFile(filepath) {
+    const inputStream = fs.createReadStream(filepath);
+    
+    const stream = new IvfTransformer({ fullframe: true });
+    inputStream.pipe(stream);
+
+    let out = {
+        frames: []
     };
 
-    if (out.signature != "DKIF") {
-        console.error("IVf: invalid signature");
-        return false
-    }
+    await new Promise((resolve, reject) => {
+        stream.on("header", (header) => {
+            out = {
+                ...out,
+                ...header
+            };
+        });
 
-    if (out.version != 0) {
-        console.error("IVf: invalid file version");
-        return false
-    }
+        stream.on("data", (frame) => {
+            out.frames.push(frame);
+        });
+    
+        stream.on("end", () => {
+            out.frames = Buffer.concat(out.frames);
+            resolve();
+        });
+    });
 
     return out;
 }
@@ -53,7 +151,7 @@ function getFrameFromIvf(file, framenum = 1) {
             timestamp: currentBuffer.readBigUInt64LE(4),
             data: currentBuffer.slice(12, 12 + size)
         }
-        //console.log(out);
+
         return out;
     }
 }
@@ -65,5 +163,6 @@ function getFrameDelayInMilliseconds(file) {
 module.exports = {
     getFrameFromIvf,
     readIvfFile,
-    getFrameDelayInMilliseconds
+    getFrameDelayInMilliseconds,
+    IvfTransformer
 }

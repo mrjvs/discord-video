@@ -1,24 +1,22 @@
-var fs = require('fs');
 const udpCon = require('dgram');
-const prism = require('prism-media');
 
-const { streamVideoFile } = require("../media/videoHandler");
-const { streamAudioFile } = require("../media/audioHandler");
+const { streamVideoFile, streamVideoFileStream } = require("../media/videoHandler");
+const { streamAudioFile, streamAudioFileStream } = require("../media/audioHandler");
 
 const max_nonce = 2 ** 32 - 1;
 
 // credit to discord.js
 function parseLocalPacket(message) {
     try {
-      const packet = Buffer.from(message);
-      let address = '';
-      for (let i = 4; i < packet.indexOf(0, i); i++) address += String.fromCharCode(packet[i]);
-      const port = parseInt(packet.readUIntLE(packet.length - 2, 2).toString(10), 10);
-      return { address, port };
+        const packet = Buffer.from(message);
+        let address = '';
+        for (let i = 4; i < packet.indexOf(0, i); i++) address += String.fromCharCode(packet[i]);
+        const port = parseInt(packet.readUIntLE(packet.length - 2, 2).toString(10), 10);
+        return { address, port };
     } catch (error) {
-      return { error };
+        return { error };
     }
-  }
+}
   
 
 class VoiceUdp {
@@ -62,12 +60,23 @@ class VoiceUdp {
 
     async playVideoFile(filepath, audioPath) {
         this.voiceConnection.setVideoStatus(true);
-        if (audioPath) {
-            streamAudioFile(this, audioPath);
-        }
-        const res = await streamVideoFile(this, filepath);
+        const res = await streamVideoFile(this, filepath, () => {
+            if (audioPath) {
+                streamAudioFile(this, audioPath);
+            }
+        });
         this.voiceConnection.setVideoStatus(false);
         return res;
+    }
+
+    async playVideoFileStream(stream, type) {
+        this.voiceConnection.setVideoStatus(true);
+        await streamVideoFileStream(this, stream, type);
+        this.voiceConnection.setVideoStatus(false);
+    }
+
+    async playAudioFileStream(stream, type) {
+        streamAudioFileStream(this, stream, type);
     }
 
     sendPacket(packet) {

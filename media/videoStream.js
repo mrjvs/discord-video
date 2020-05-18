@@ -22,6 +22,7 @@ class VideoStream extends Writable {
     }
 
     _write(frame, _, callback) {
+        this.count++;
         if (!this.startTime)
             this.startTime = Date.now();
 
@@ -32,13 +33,12 @@ class VideoStream extends Writable {
             this.udp.sendPacket(packet);
         }
 
-        const next = this.sleepTime + this.count * this.sleepTime - (Date.now() - this.startTime);
+        this.ops = incrementVideoFrameValues(this.ops);
+
+        const next = (this.count * this.sleepTime) - (Date.now() - this.startTime);
         setTimeout(() => {
             callback();
         }, next);
-
-        this.count++;
-        this.ops = incrementVideoFrameValues(this.ops);
     }
 }
 
