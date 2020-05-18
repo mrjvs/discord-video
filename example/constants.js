@@ -1,4 +1,4 @@
 module.exports = {
     voiceChannel: "ID HERE",
-    guild: "ID HERE"
+    guildId: "ID HERE"
 };

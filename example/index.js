@@ -3,7 +3,7 @@ const fs = require("fs");
 const client = new Client();
 
 const token = require("./config");
-const { voiceChannel, guild } = require("./constants");
+const { voiceChannel, guildId } = require("./constants");
 const video = "VIDEO FILE HERE";
 
 async function playVideo(voice) {
@@ -24,7 +24,7 @@ async function playVideo(voice) {
 
 // guild create event
 client.events.on("guild", (guild) => {
-    if (guild !== guild.id)
+    if (guildId !== guild.id)
         return
     
     // join voice channel
@@ -33,8 +33,7 @@ client.events.on("guild", (guild) => {
 
 // ready event
 client.events.on("ready", (user) => {
-    console.log(user);
-    console.log(`--- bot is ready ---`);
+    console.log(`--- ${user.username}#${user.discriminator} is ready ---`);
 });
 
 // message event

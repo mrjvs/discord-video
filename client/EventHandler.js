@@ -1,6 +1,6 @@
 function handleGatewayEvent(client, event, data) {
     if (event === 'READY') {
-        client.events.emit("ready", {});
+        client.events.emit("ready", client.bot);
     } else if (event === 'GUILD_CREATE') {
         client.events.emit("guild", data);
     } else if (event === 'MESSAGE_CREATE') {
