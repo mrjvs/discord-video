@@ -1,5 +1,7 @@
 # Discord bot video
 Video for discord bot proof of concept.
+This is an experiment done by the [Cascadebot](https://github.com/CascadeBot) team.
+
 **Warning:** Not made to be used in production. Only use for testing.
 
 ## features
@@ -23,8 +25,14 @@ What I implemented and what I did not.
 #### Extras
  - [ ] Figure out rtp header extensions (discord specific)
 
-## running example
+## Running example
 `config.js`:
 ```JS
 module.exports = "BOT TOKEN HERE"
 ```
+
+in `/example`:
+1. have `config.js` like above
+2. have `constants.js` set correctly for your voice channel
+3. set video file path in `index.js`
+4. run with `node .`
